@@ -48,6 +48,7 @@ class Parking(object):
   #Car_Space_Position_Top=[]
 
   #func one set Camera paramter，with different rota
+  
   Cam_rota=[[[10,0,0],[-9,-13,22]],
             [[20,0,0],[-9,-17,21]],
             [[30,0,0],[-9,-21,19]],
@@ -68,11 +69,14 @@ class Parking(object):
       self.output_dir = output_dir
       #for i in range(np.random.choice(np.arange(Space_Position.shape[0]))-len(bpy.data.objects)):
 
+      
       self.configureBlender()
       self.configureDataset()
       self.setParkingSpots()
+      self.AllCarColors()
       self.setCameraPos()
       self.getCarTypesFromBlender()
+      
       
 
       bpy.app.handlers.render_complete.append(self.render_complete)
@@ -81,9 +85,10 @@ class Parking(object):
     
   def startRenderingIteration(self,car_num):
       for j in range(0, car_num): 
+      	self.cars = self.getSceneObjects("car")
+      	file.write(str(1)+str(self.cars)+"\n")
       	Original_car_medel_num = len(self.Car_classes) 
       	Total_need_car_model_num = np.random.choice(np.arange(3,len(np.array(self.Car_Space_Position_Top).reshape(-1, 3)))) 
-      	file = open("/home/gnss/Desktop/file.txt","a")
       	if Total_need_car_model_num <= Original_car_medel_num:
       		need_car_new_model_num = Total_need_car_model_num
       	else:
@@ -91,7 +96,7 @@ class Parking(object):
       	for n in range(need_car_new_model_num):
       		self.createParkingCars()
       	#file.write(str(self.Car_classes)+"   "+str(Total_need_car_model_num)+ "\n")
-      	self.cars = self.getSceneObjects("car")
+      	
       	#file.write(str(len(self.cars))+str(self.cars)+"\n")
       	#file.write(str(self.cars)+"\n")
       	'''
@@ -99,13 +104,19 @@ class Parking(object):
       	file.write(str(len(self.cars))+"\n")
       	print (">>>>>>>99999>>>>>>>>>>")
       	'''
+      	self.cars = self.getSceneObjects("car")
+      	file.write(str(2)+str(self.cars)+"\n")
+      	#file.write(str(Total_need_car_model_num)+str(len(self.cars))+str(self.cars)+"\n")
       	self.hide_all_cars( )
       	self.sampleCarLocations(Total_need_car_model_num)
+      	self.RandomCarColor()
+      	self.RandomCarRotation()
       	self.saveLocalImage(j)
-      	del self.cars[:]
       	#bpy.context.scene.render.engine = 'BLENDER_RENDER'
       	bpy.ops.render.render(write_still = True ) 
-
+      	self.RecoveryModel()
+      	#bpy.ops.wm.open_mainfile(filepath = "/home/gnss/si/Blender_test/parkinglot/ParkingLot_mini_final_v2.blend")
+      	
 
   def configureBlender(self):
       # rendering constants
@@ -141,24 +152,84 @@ class Parking(object):
       print("-----------------  created new object")
       #self.getSceneObjects("car")     
 
+  
+  def RecoveryModel(self):
+  	bpy.ops.object.select_all(action='DESELECT')#deselect all
+  	for car in self.cars:
+  		if (car.startswith("car") and ("." in car)):
+  			bpy.ops.object.select_pattern(pattern=car)
+  			bpy.ops.object.delete(use_global=False)
+
+  		
+
+
+  def RandomCarColor(self):
+  	for carname in self.cars:
+  		color = self.colors[np.random.choice(np.arange(len(self.colors)))]
+  		color = color.tolist()
+  		color.append(1)
+  		for slot in bpy.data.objects[carname].material_slots:
+  			if (slot.name.startswith("carpaint.Black")):
+  				nodes = slot.material.node_tree.nodes
+  				nodes["Diffuse BSDF"].inputs[0].default_value = color
+  			elif (slot.name.startswith("Carpaint.stainedwhite")):
+  				nodes = slot.material.node_tree.nodes
+  				nodes["Diffuse BSDF"].inputs[0].default_value = color
+  			elif (slot.name.startswith("carpaint_BMW1")):
+  				nodes = slot.material.node_tree.nodes
+  				nodes["Diffuse BSDF"].inputs[0].default_value = color
+  			elif (slot.name.startswith("carpaint_Dodge")):
+  				nodes = slot.material.node_tree.nodes
+  				nodes["Diffuse BSDF"].inputs[0].default_value = color
+  			elif (slot.name.startswith("Carpaint.Blue")):
+  				nodes = slot.material.node_tree.nodes
+  				nodes["Diffuse BSDF"].inputs[0].default_value = color
+  			elif (slot.name.startswith("Carpaint_Golf")):
+  				nodes = slot.material.node_tree.nodes
+  				nodes["Diffuse BSDF"].inputs[0].default_value = color
+  			elif (slot.name.startswith("carpaint_VWT")):
+  				nodes = slot.material.node_tree.nodes
+  				nodes["Diffuse BSDF"].inputs[0].default_value = color
+
+
+  def RandomCarRotation(self):
+  	for carname in self.cars:
+  		if ("car_AudiA8" in carname):
+  			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_AudiA8"].rotation_euler
+  			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
+  		elif ("car_BMW335i" in carname):
+  			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_BMW335i"].rotation_euler
+  			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
+  		elif ("car_BMWM1" in carname):
+  			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_BMWM1"].rotation_euler
+  			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180  	  
+  		elif ("car_DodgeRamPickup" in carname):
+  			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_DodgeRamPickup"].rotation_euler
+  			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
+  		elif ("car_FIAT" in carname):
+  			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_FIAT"].rotation_euler
+  			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
+  		elif ("car_VWGolfMK" in carname):
+  			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_VWGolfMK"].rotation_euler
+  			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
+  			bpy.data.objects[carname].scale = bpy.data.objects["car_VWGolfMK"].scale
+  		elif ("car_VWTouareg" in carname):
+  			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_VWTouareg"].rotation_euler
+  			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180  
+  
   def hide_all_cars(self):
-      for car in self.cars:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                bpy.data.objects[car].hide_render = True;
-      '''
-      print (">>>>>>>>555555>>>>>>>>")
-      print (self.cars)
-      print (">>>>>>>>555555>>>>>>>>")
-      '''
+      for car in self.cars:     
+        bpy.data.objects[car].hide_render = True;
+
 
   def getCarTypesFromBlender(self):
       self.Car_classes = []
       for obj in bpy.data.objects:  #bpy.context.selected_objects
-        if(obj.name.startswith("car") and (not obj.name.isdigit())): 
+        if(obj.name.startswith("car") and (not ("." in obj.name))): 
           self.Car_classes.append(obj.name)
-      print ('>>>>>11111>>>>')
-      print (len(self.Car_classes))
-      print ('>>>>>11111>>>>')
 
 
+  '''
   def showObjects(self):
       for obj in bpy.data.objects:  #bpy.context.selected_objects
         self.obj_car.append(obj)
@@ -168,6 +239,7 @@ class Parking(object):
       print (">>>>>00000>>>>>>>>>")
 
 
+  '''
   def getSceneObjects(self,object_class):
       objects = []
       for obj in bpy.data.objects:  #bpy.context.selected_objects
@@ -179,6 +251,7 @@ class Parking(object):
       #print (objects,bpy.data.objects[objects[0]].rotation_euler,objects[0])
       print ('>>>>>222222>>>>')
       return objects
+
 
 
     
@@ -195,6 +268,9 @@ class Parking(object):
       new_obj = bpy.data.objects.new(name, mesh)
       bpy.context.scene.objects.link(new_obj)
       new_obj.rotation_mode = 'XYZ'# Force the right rotation mode
+      bpy.ops.object.select_all(action='DESELECT')#deselect all
+      bpy.ops.object.select_pattern(pattern=new_obj.name)
+      bpy.ops.object.make_single_user(object = True, obdata = True, material = True,texture = True )
       '''
       print (">>>>>>>>>>>9999999>>>>>>>>>>>")
       #print (bpy.data.objects["car_AudiA8"].active_material.name,bpy.data.objects[new_obj.name].active_material.diffuse_color)
@@ -203,98 +279,20 @@ class Parking(object):
       #print (mat.name)
       print (">>>>>>>>>>>9999999>>>>>>>>>>>")
       '''
-      colors = [
-      			[42, 47, 50],[24, 96, 226],[103, 192, 234],[172,65,62],[192,7,22],
-      			[42,49,51],[217,216,215],[63,52,58],[22,23,25],[220,115,68],
-      			[225,196, 78],[18,71,79],[48,53,91],[194,62,3],[181,107,73],
-      			[21,45,69],[176,176,181],[76,74,76],[106,115,146],[142,155,75],
-      			[174,218,120],[82, 23, 107],[240,160,149],[55,94,153],[149,194,51],
-      			[228,202,81],[230,225,229]
-      			]
-      if (new_obj.name.startswith("car_AudiA8")):
-      	bpy.data.objects[new_obj.name].rotation_euler = bpy.data.objects["car_AudiA8"].rotation_euler
-      	bpy.data.objects[new_obj.name].rotation_euler.z = bpy.data.objects[new_obj.name].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-      	bpy.ops.object.make_single_user(object = True, obdata = True, material = True,texture = True )
-      	color = colors[np.random.choice(np.arange(len(colors)))]
-      	for slot1 in bpy.data.objects[new_obj.name].material_slots:
-      		if (slot1.name.startswith("carpaint.Black")):
-      			nodes1 = slot1.material.node_tree.nodes
-      			nodes1["Diffuse BSDF"].inputs[0].default_value = color
-
-      elif (new_obj.name.startswith("car_BMW335i")):
-      	bpy.data.objects[new_obj.name].rotation_euler = bpy.data.objects["car_BMW335i"].rotation_euler
-      	bpy.data.objects[new_obj.name].rotation_euler.z = bpy.data.objects[new_obj.name].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-      	bpy.ops.object.make_single_user(object = True, obdata = True, material = True,texture = True )
-      	#bpy.data.objects[new_obj.name].active_material.diffuse_color = (1,0,0)
-      	for slot2 in bpy.data.objects[new_obj.name].material_slots:
-      		if (slot2.name.startswith("Carpaint.stainedwhite")):
-      			nodes2 = slot2.material.node_tree.nodes
-      			nodes2["Diffuse BSDF"].inputs[0].default_value = color
+      
 
 
+  def AllCarColors(self):
+  	self.colors = np.array([
+  		[42, 47, 50],[24, 96, 226],[103, 192, 234],[172,65,62],[192,7,22],
+  		[42,49,51],[217,216,215],[63,52,58],[22,23,25],[220,115,68],
+  		[225,196, 78],[18,71,79],[48,53,91],[194,62,3],[181,107,73],
+  		[21,45,69],[176,176,181],[76,74,76],[106,115,146],[142,155,75],
+  		[174,218,120],[82, 23, 107],[240,160,149],[55,94,153],[149,194,51],
+  		[228,202,81],[230,225,229],[10,10,10]
+  		])
+  	self.colors = self.colors/255.00
 
-      elif (new_obj.name.startswith("car_BMWM1")):
-      	bpy.data.objects[new_obj.name].rotation_euler = bpy.data.objects["car_BMWM1"].rotation_euler
-      	bpy.data.objects[new_obj.name].rotation_euler.z = bpy.data.objects[new_obj.name].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-      	bpy.ops.object.make_single_user(object = True, obdata = True, material = True,texture = True )
-      	#bpy.data.objects[new_obj.name].active_material.diffuse_color = (1,0,0)
-      	for slot3 in bpy.data.objects[new_obj.name].material_slots:
-      		if (slot3.name.startswith("carpaint.Black")):
-      			nodes3 = slot3.material.node_tree.nodes
-      			nodes3["Diffuse BSDF"].inputs[0].default_value = color
-
-
-      elif (new_obj.name.startswith("car_DodgeRamPickup")):
-      	bpy.data.objects[new_obj.name].rotation_euler = bpy.data.objects["car_DodgeRamPickup"].rotation_euler
-      	bpy.data.objects[new_obj.name].rotation_euler.z = bpy.data.objects[new_obj.name].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-      	bpy.ops.object.make_single_user(object = True, obdata = True, material = True,texture = True )
-      	#bpy.data.objects[new_obj.name].active_material.diffuse_color = (1,0,0)
-      	for slot4 in bpy.data.objects[new_obj.name].material_slots:
-      		if (slot4.name.startswith("carpaint.Black")):
-      			nodes4 = slot4.material.node_tree.nodes
-      			nodes4["Diffuse BSDF"].inputs[0].default_value = color
-
-
-      elif (new_obj.name.startswith("car_FIAT")):
-      	bpy.data.objects[new_obj.name].rotation_euler = bpy.data.objects["car_FIAT"].rotation_euler
-      	bpy.data.objects[new_obj.name].rotation_euler.z = bpy.data.objects[new_obj.name].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-      	bpy.ops.object.make_single_user(object = True, obdata = True, material = True,texture = True )
-      	#bpy.data.objects[new_obj.name].active_material.diffuse_color = (1,0,0)
-      	for slot5 in bpy.data.objects[new_obj.name].material_slots:
-      		if (slot5.name.startswith("Carpaint.Blue")):
-      			nodes5 = slot5.material.node_tree.nodes
-      			nodes5["Diffuse BSDF"].inputs[0].default_value = color
-
-
-
-      elif (new_obj.name.startswith("car_VWGolfMK")):
-      	bpy.data.objects[new_obj.name].rotation_euler = bpy.data.objects["car_VWGolfMK"].rotation_euler
-      	bpy.data.objects[new_obj.name].rotation_euler.z = bpy.data.objects[new_obj.name].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-      	bpy.ops.object.make_single_user(object = True, obdata = True, material = True,texture = True )
-      	#bpy.data.objects[new_obj.name].active_material.diffuse_color = (1,0,0)
-      	bpy.data.objects[new_obj.name].scale = bpy.data.objects["car_VWGolfMK"].scale
-      	for slot6 in bpy.data.objects[new_obj.name].material_slots:
-      		if (slot6.name.startswith("Carpaint.stainedwhite")):
-      			nodes6 = slot6.material.node_tree.nodes
-      			nodes6["Diffuse BSDF"].inputs[0].default_value = [random.random(),random.random(),random.random(),1]
-
-
-      elif (new_obj.name.startswith("car_VWTouareg")):
-      	bpy.data.objects[new_obj.name].rotation_euler = bpy.data.objects["car_VWTouareg"].rotation_euler
-      	bpy.data.objects[new_obj.name].rotation_euler.z = bpy.data.objects[new_obj.name].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-      	bpy.ops.object.make_single_user(object = True, obdata = True, material = True,texture = True )
-      	bpy.data.objects[new_obj.name].active_material.diffuse_color = (1,0,0)
-      	for slot7 in bpy.data.objects[new_obj.name].material_slots:
-      		if (slot7.name.startswith("carpaint.Black")):
-      			nodes7 = slot7.material.node_tree.nodes
-      			nodes7["Diffuse BSDF"].inputs[0].default_value = [random.random(),random.random(),random.random(),1]
-
-  '''
-  def get_random_color(self, obj_name):
-      r,g,b = [random.random() for i in range (3) ]
-      return r,g,b,1
-
-  '''
   def setCarLocation(self, car_name, location):
       print( 'arrangeCarLocation', car_name , location  )
       obj = bpy.data.objects[car_name]
@@ -369,10 +367,6 @@ class Parking(object):
 
         # https://blender.stackexchange.com/questions/12318/get-position-of-focus-point-of-camera
         # https://stackoverflow.com/questions/42647106/blender-how-to-move-the-camera-from-python-script
-        # 
-        # 
-        # 
-        # 
         bpy.context.scene.camera.rotation_mode = 'XYZ'
         bpy.data.objects['Camera'].location = self.Cam_rota[5][1]
         bpy.data.objects['Camera'].rotation_euler = [math.radians(self.Cam_rota[5][0][0]+random.random()*0.4), math.radians(0), math.radians(self.Cam_rota[5][0][2]) ]
@@ -403,13 +397,14 @@ if __name__=="__main__":
 
 
 
+    file = open("/home/gnss/Desktop/file.txt","a")
     parking = Parking('/home/gnss/si/Blender_test/parkinglot/Blender_render/({},{})'.format('one', 'two'))
-    parking.startRenderingIteration(10)
+    parking.startRenderingIteration(100)
 
     '''''
     annot_file = open(output_dir + '/annotations.txt', 'w+')
     annot_file.write('')      
     annot_file.close()
-    '''''
+    '''
 
     
