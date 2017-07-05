@@ -87,6 +87,9 @@ class Parking(object):
       for j in range(0, car_num): 
       	self.cars = self.getSceneObjects("car")
       	file.write(str(1)+str(self.cars)+"\n")
+      	bpy.types.UserPreferencesEdit.undo_steps = 0
+      	bpy.types.UserPreferencesSystem.memory_cache_limit = 32767
+      	bpy.types.UserPreferencesEdit.undo_memory_limit = 32767
       	Original_car_medel_num = len(self.Car_classes) 
       	Total_need_car_model_num = np.random.choice(np.arange(3,len(np.array(self.Car_Space_Position_Top).reshape(-1, 3)))) 
       	if Total_need_car_model_num <= Original_car_medel_num:
@@ -157,8 +160,12 @@ class Parking(object):
   	bpy.ops.object.select_all(action='DESELECT')#deselect all
   	for car in self.cars:
   		if (car.startswith("car") and ("." in car)):
-  			bpy.ops.object.select_pattern(pattern=car)
-  			bpy.ops.object.delete(use_global=False)
+  			#bpy.ops.object.select_pattern(pattern=car)
+  			bpy.data.objects[car].select = True
+  			bpy.ops.object.delete(use_global = True)
+  	bpy.ops.wm.save_as_mainfile(filepath="/home/gnss/si/Blender_test/parkinglot/ParkingLot_mini_final_v2.blend")
+  	bpy.ops.wm.open_mainfile(filepath="/home/gnss/si/Blender_test/parkinglot/ParkingLot_mini_final_v2.blend")
+
 
   		
 
@@ -194,26 +201,26 @@ class Parking(object):
 
   def RandomCarRotation(self):
   	for carname in self.cars:
-  		if ("car_AudiA8" in carname):
+  		if (("car_AudiA8" in carname)and ("." in carname)):
   			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_AudiA8"].rotation_euler
   			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-  		elif ("car_BMW335i" in carname):
+  		elif (("car_BMW335i" in carname)and ("." in carname)):
   			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_BMW335i"].rotation_euler
   			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-  		elif ("car_BMWM1" in carname):
+  		elif (("car_BMWM1" in carname) and ("." in carname)):
   			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_BMWM1"].rotation_euler
   			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180  	  
-  		elif ("car_DodgeRamPickup" in carname):
+  		elif (("car_DodgeRamPickup" in carname) and ("." in carname)):
   			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_DodgeRamPickup"].rotation_euler
   			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-  		elif ("car_FIAT" in carname):
+  		elif (("car_FIAT" in carname) and ("." in carname)):
   			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_FIAT"].rotation_euler
   			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
-  		elif ("car_VWGolfMK" in carname):
+  		elif (("car_VWGolfMK" in carname) and ("." in carname)):
   			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_VWGolfMK"].rotation_euler
   			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180
   			bpy.data.objects[carname].scale = bpy.data.objects["car_VWGolfMK"].scale
-  		elif ("car_VWTouareg" in carname):
+  		elif (("car_VWTouareg" in carname) and ("." in carname)):
   			bpy.data.objects[carname].rotation_euler = bpy.data.objects["car_VWTouareg"].rotation_euler
   			bpy.data.objects[carname].rotation_euler.z = bpy.data.objects[carname].rotation_euler.z+np.random.choice(np.array([0,math.pi]))+np.random.uniform(-2,2)*math.pi/180  
   
@@ -374,7 +381,7 @@ class Parking(object):
   def saveLocalImage(self, i):
       filepath = self.output_dir + '/images/' + str(i + 1) + '.png'                            
       bpy.context.scene.render.filepath = filepath
-      self.nodes['File Output'].file_slots[0].path = '/images2/'+str(i + 1) 
+      #self.nodes['File Output'].file_slots[0].path = '/images2/'+str(i + 1) 
       
 
 
