@@ -9,7 +9,7 @@ import mathutils
 import numpy as np
 from random import randint
 
-sys.path.append("/usr/local/lib/python2.7/dist-packages")
+sys.path.append("/usr/local/lib/python2.7/dist-packages") #导入Python库路径
 print (sys.path)
 
 '''''
@@ -31,8 +31,6 @@ for ob in scene.objects:
 '''''
 
 class Parking(object):
-
-  
   sunlight_from = [2]
   sunlight_to = [2]
   blur_from = 0.0
@@ -64,32 +62,51 @@ class Parking(object):
            ]
 
 
-  def __init__(self,output_dir):
+  def __init__(self,output_dir): #初始化函数
 
       self.output_dir = output_dir
       #for i in range(np.random.choice(np.arange(Space_Position.shape[0]))-len(bpy.data.objects)):
 
       
-      self.configureBlender()
-      self.configureDataset()
-      self.setParkingSpots()
-      self.AllCarColors()
-      self.setCameraPos()
-      self.getCarTypesFromBlender()
-      
-      
-
-      bpy.app.handlers.render_complete.append(self.render_complete)
+      self.configureBlender() #设置渲染图片的基本参数，如分辨率等
+      self.configureDataset() #设置相关路径
+      self.setParkingSpots() #设置停车位坐标
+      self.AllCarColors()#设置车辆颜色
+      self.setCameraPos()#设置摄像头位置
+      self.getCarTypesFromBlender() #初始化模型中最原始的车辆
+      bpy.app.handlers.render_complete.append(self.render_complete) #渲染结束指令
 
 
-    
+
+
+
+
+  '''' 
+  #####总体流程###############
+  1. 随机产生渲染车辆总数
+  2. 创造新的车辆
+  3. 将停车场内所有的车辆隐藏
+  4. 打乱所有车辆的位置，并显示
+  5. 随机化每辆车的颜色
+  6. 随机化每辆车的停放角度
+  7. 读取在Blender软件中插入在摄像头中的关键帧，按帧渲染图片，获得不同角度的停车场,渲染结束
+  8. 恢复停车场模型到原始状态,保存模型
+  9. 重新加载模型
+  '''
   def startRenderingIteration(self,car_num):
       for j in range(0, car_num): 
-      	self.cars = self.getSceneObjects("car")
-      	file.write(str(1)+str(self.cars)+"\n")
+      	#self.cars = self.getSceneObjects("car")
+      	#file.write(str(1)+str(self.cars)+"\n")
+
+
+
+      	###限制内存使用
       	bpy.types.UserPreferencesEdit.undo_steps = 0
       	bpy.types.UserPreferencesSystem.memory_cache_limit = 32767
       	bpy.types.UserPreferencesEdit.undo_memory_limit = 32767
+
+
+      	####随机产生渲染车辆总数
       	Original_car_medel_num = len(self.Car_classes) 
       	Total_need_car_model_num = np.random.choice(np.arange(3,len(np.array(self.Car_Space_Position_Top).reshape(-1, 3)))) 
       	if Total_need_car_model_num <= Original_car_medel_num:
@@ -107,19 +124,55 @@ class Parking(object):
       	file.write(str(len(self.cars))+"\n")
       	print (">>>>>>>99999>>>>>>>>>>")
       	'''
+
+
+
+
       	self.cars = self.getSceneObjects("car")
-      	file.write(str(2)+str(self.cars)+"\n")
+      	#file.write(str(2)+str(self.cars)+"\n")
       	#file.write(str(Total_need_car_model_num)+str(len(self.cars))+str(self.cars)+"\n")
-      	self.hide_all_cars( )
-      	self.sampleCarLocations(Total_need_car_model_num)
-      	self.RandomCarColor()
-      	self.RandomCarRotation()
-      	self.saveLocalImage(j)
-      	#bpy.context.scene.render.engine = 'BLENDER_RENDER'
-      	bpy.ops.render.render(write_still = True ) 
-      	self.RecoveryModel()
+
+      	self.hide_all_cars( )#隐藏停车场内所有的车辆
+      	self.sampleCarLocations(Total_need_car_model_num)#打乱所有车辆的位置，并显示
+      	self.RandomCarColor() #随机化每辆车的颜色
+      	self.RandomCarRotation() #随机化每辆车的停放角度
+      	#self.saveLocalImage(j)
+      	'''
+      	bpy.context.scene.frame_current = 2.0
+      	bpy.ops.render.render(write_still=True)
+      	'''
+
+      	###按帧渲染###########
+      	frames = self.KeyFrames()
+      	file.write(str(frames[0])+"\n")
+      	for frame in frames:
+      		bpy.context.scene.frame_current = frame
+      		#self.saveLocalImage(j,bpy.context.scene.frame_current)
+      		#file.write(str(frame)+"\n")
+      		#bpy.context.scene.render.filepath = self.saveLocalImage(j,bpy.context.scene.frame_current)
+      		self.saveLocalImage(j,frame)
+      		bpy.ops.render.render(write_still=True)
+
+
+
+      	#bpy.ops.render.render(write_still = True )
+      	#file.write(str(bpy.data.objects["Camera"].animation_data.action.fcurves[0].keyframe_points[0].co[0])+"\n")
+      	self.RecoveryModel() ##恢复停车场模型到原始状态,保存模型, 重新加载模型
       	#bpy.ops.wm.open_mainfile(filepath = "/home/gnss/si/Blender_test/parkinglot/ParkingLot_mini_final_v2.blend")
       	
+
+  def KeyFrames(self):
+  	start = bpy.context.scene.frame_start ##获取开始帧数
+  	end = bpy.context.scene.frame_end ##获取结束帧数
+  	frames = []
+
+  	###获取所有帧
+  	for fcurve in bpy.data.objects["Camera"].animation_data.action.fcurves:
+  		for keyframe_point in fcurve.keyframe_points:
+  			x, y = keyframe_point.co
+  			if (x >= start) and (x <= end) and (x not in frames):
+  				frames.append(x)
+  	return frames 
 
   def configureBlender(self):
       # rendering constants
@@ -139,11 +192,11 @@ class Parking(object):
   def configureDataset(self):
       if not os.path.exists(self.output_dir):
           os.makedirs(self.output_dir)
-      if not os.path.exists(self.output_dir + '/images'):
+      #if not os.path.exists(self.output_dir + '/images'):
           os.makedirs(self.output_dir + '/images')
-      if not os.path.exists(self.output_dir + '/annotations'):
+      #if not os.path.exists(self.output_dir + '/annotations'):
           os.makedirs(self.output_dir + '/annotations')
-      if not os.path.exists(self.output_dir + '/prepare'):
+      #if not os.path.exists(self.output_dir + '/prepare'):
           os.makedirs(self.output_dir + '/prepare')
 
 
@@ -161,10 +214,10 @@ class Parking(object):
   	for car in self.cars:
   		if (car.startswith("car") and ("." in car)):
   			#bpy.ops.object.select_pattern(pattern=car)
-  			bpy.data.objects[car].select = True
-  			bpy.ops.object.delete(use_global = True)
-  	bpy.ops.wm.save_as_mainfile(filepath="/home/gnss/si/Blender_test/parkinglot/ParkingLot_mini_final_v2.blend")
-  	bpy.ops.wm.open_mainfile(filepath="/home/gnss/si/Blender_test/parkinglot/ParkingLot_mini_final_v2.blend")
+  			bpy.data.objects[car].select = True ##获取所有帧根据名字选中object
+  			bpy.ops.object.delete(use_global = True) #删除选中的object
+  	bpy.ops.wm.save_as_mainfile(filepath="/home/gnss/si/Blender_test/parkinglot/ParkingLot_mini.blend") #保存模型
+  	bpy.ops.wm.open_mainfile(filepath="/home/gnss/si/Blender_test/parkinglot/ParkingLot_mini.blend")##加载模型
 
 
   		
@@ -175,6 +228,7 @@ class Parking(object):
   		color = self.colors[np.random.choice(np.arange(len(self.colors)))]
   		color = color.tolist()
   		color.append(1)
+  		#####通过节点,根据材质名字，给材质随机改变颜色(RGBA)的值
   		for slot in bpy.data.objects[carname].material_slots:
   			if (slot.name.startswith("carpaint.Black")):
   				nodes = slot.material.node_tree.nodes
@@ -247,6 +301,7 @@ class Parking(object):
 
 
   '''
+  ############################更具设定object的名字的条件，获取模型中所有符合要求的object############################
   def getSceneObjects(self,object_class):
       objects = []
       for obj in bpy.data.objects:  #bpy.context.selected_objects
@@ -300,6 +355,7 @@ class Parking(object):
   		])
   	self.colors = self.colors/255.00
 
+  ####同object的名字，将object赋予坐标
   def setCarLocation(self, car_name, location):
       print( 'arrangeCarLocation', car_name , location  )
       obj = bpy.data.objects[car_name]
@@ -309,7 +365,7 @@ class Parking(object):
       vec_rot = vec * inv
       obj.location =vec  #vec_rot 
   
-   ############################################################################################   
+   ##############################随机化车辆的位置##############################################################   
   def sampleCarLocations(self,n):
       print("car_samples")
       self.Space_Position = np.array(self.Car_Space_Position_Top)
@@ -375,13 +431,19 @@ class Parking(object):
         # https://blender.stackexchange.com/questions/12318/get-position-of-focus-point-of-camera
         # https://stackoverflow.com/questions/42647106/blender-how-to-move-the-camera-from-python-script
         bpy.context.scene.camera.rotation_mode = 'XYZ'
-        bpy.data.objects['Camera'].location = self.Cam_rota[5][1]
-        bpy.data.objects['Camera'].rotation_euler = [math.radians(self.Cam_rota[5][0][0]+random.random()*0.4), math.radians(0), math.radians(self.Cam_rota[5][0][2]) ]
-
-  def saveLocalImage(self, i):
-      filepath = self.output_dir + '/images/' + str(i + 1) + '.png'                            
-      bpy.context.scene.render.filepath = filepath
-      #self.nodes['File Output'].file_slots[0].path = '/images2/'+str(i + 1) 
+        #bpy.data.objects['Camera'].location = self.Cam_rota[5][1]
+        #bpy.data.objects['Camera'].rotation_euler = [math.radians(self.Cam_rota[5][0][0]+random.random()*0.4), math.radians(0), math.radians(self.Cam_rota[5][0][2]) ]
+  ##########################设置保存路径函数##############################      
+  def saveLocalImage(self, i, keyframe):
+  	if keyframe == 1.0:
+  		output_filepath = self.output_dir + "/front" +'/images/' + str(i + 1) + '.png'
+  	elif keyframe == 2.0:
+  		output_filepath = self.output_dir + "/behind" +'/images/' + str(i + 1) + '.png'
+  	elif keyframe == 3.0:
+  		output_filepath = self.output_dir + "/left" +'/images/' + str(i + 1) + '.png'
+  	#return output_filepath
+  	bpy.context.scene.render.filepath = output_filepath
+    #self.nodes['File Output'].file_slots[0].path = '/images2/'+str(i + 1) 
       
 
 
@@ -399,14 +461,14 @@ class Parking(object):
           #clear this hander
           bpy.app.handers.render_complete.remove(render_complete)
       '''''
-
+##主函数
 if __name__=="__main__":
 
 
 
     file = open("/home/gnss/Desktop/file.txt","a")
-    parking = Parking('/home/gnss/si/Blender_test/parkinglot/Blender_render/({},{})'.format('one', 'two'))
-    parking.startRenderingIteration(100)
+    parking = Parking('/home/gnss/si/Blender_test/parkinglot/Blender_render/({},{})'.format('one', 'three'))
+    parking.startRenderingIteration(10)
 
     '''''
     annot_file = open(output_dir + '/annotations.txt', 'w+')
