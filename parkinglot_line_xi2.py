@@ -144,14 +144,19 @@ class Parking(object):
 
       	###按帧渲染###########
       	frames = self.KeyFrames()
-      	file.write(str(frames[0])+"\n")
+      	#file.write(str(frames[0])+"\n")
       	for frame in frames:
       		bpy.context.scene.frame_current = frame
       		#self.saveLocalImage(j,bpy.context.scene.frame_current)
       		#file.write(str(frame)+"\n")
       		#bpy.context.scene.render.filepath = self.saveLocalImage(j,bpy.context.scene.frame_current)
-      		self.saveLocalImage(j,frame)
+      		bpy.context.scene.render.filepath, depth_path = self.saveLocalImage(j,frame)
+      		self.nodes = bpy.context.scene.node_tree.nodes
+      		self.links = bpy.context.scene.node_tree.links
+      		self.nodes['File Output'].base_path = self.output_dir
+      		self.nodes['File Output'].file_slots[0].path = depth_path
       		bpy.ops.render.render(write_still=True)
+      		
 
 
 
@@ -183,23 +188,22 @@ class Parking(object):
       bpy.context.scene.render.resolution_x = RENDER_RES_X
       bpy.context.scene.render.resolution_y = RENDER_RES_Y
       bpy.context.scene.render.use_border = False
-
+      '''
       self.nodes = bpy.context.scene.node_tree.nodes
       self.links = bpy.context.scene.node_tree.links
       self.nodes['File Output'].base_path = self.output_dir
+      '''
 
 
   def configureDataset(self):
       if not os.path.exists(self.output_dir):
           os.makedirs(self.output_dir)
-      #if not os.path.exists(self.output_dir + '/images'):
-          os.makedirs(self.output_dir + '/images')
-      #if not os.path.exists(self.output_dir + '/annotations'):
-          os.makedirs(self.output_dir + '/annotations')
-      #if not os.path.exists(self.output_dir + '/prepare'):
-          os.makedirs(self.output_dir + '/prepare')
-
-
+      if not os.path.exists(self.output_dir + "/front" +'/images2'):
+          os.makedirs(self.output_dir + "/front" +'/images2')
+      if not os.path.exists(self.output_dir + "/behind" +'/images2'):
+          os.makedirs(self.output_dir + "/behind" +'/images2')
+      if not os.path.exists(self.output_dir + "/left" +'/images2'):
+          os.makedirs(self.output_dir + "/left" +'/images2')
 
 
 ###########################################################################
@@ -216,8 +220,8 @@ class Parking(object):
   			#bpy.ops.object.select_pattern(pattern=car)
   			bpy.data.objects[car].select = True ##获取所有帧根据名字选中object
   			bpy.ops.object.delete(use_global = True) #删除选中的object
-  	bpy.ops.wm.save_as_mainfile(filepath="/home/gnss/si/Blender_test/parkinglot/ParkingLot_mini.blend") #保存模型
-  	bpy.ops.wm.open_mainfile(filepath="/home/gnss/si/Blender_test/parkinglot/ParkingLot_mini.blend")##加载模型
+  	bpy.ops.wm.save_as_mainfile(filepath="/home/xisizhe/blender/ParkingLot_mini_final_v1.blend") #保存模型
+  	bpy.ops.wm.open_mainfile(filepath="/home/xisizhe/blender/ParkingLot_mini_final_v1.blend")##加载模型
 
 
   		
@@ -228,9 +232,9 @@ class Parking(object):
   		color = self.colors[np.random.choice(np.arange(len(self.colors)))]
   		color = color.tolist()
   		color.append(1)
-  		#####通过节点,根据材质名字，给材质随机改变颜色(RGBA)的值
+  		#####通过节点编辑,根据材质名字，给材质随机改变颜色(RGBA)的值
   		for slot in bpy.data.objects[carname].material_slots:
-  			if (slot.name.startswith("carpaint.Black")):
+  			if (slot.name.startswith("carpaint_AudiA8")):
   				nodes = slot.material.node_tree.nodes
   				nodes["Diffuse BSDF"].inputs[0].default_value = color
   			elif (slot.name.startswith("Carpaint.stainedwhite")):
@@ -437,13 +441,16 @@ class Parking(object):
   def saveLocalImage(self, i, keyframe):
   	if keyframe == 1.0:
   		output_filepath = self.output_dir + "/front" +'/images/' + str(i + 1) + '.png'
+  		depth_path = "/front" +'/images2/'+str(i + 1)+'.png'
   	elif keyframe == 2.0:
   		output_filepath = self.output_dir + "/behind" +'/images/' + str(i + 1) + '.png'
+  		depth_path = "/behind" + '/images2/'+str(i + 1)+'.png'
   	elif keyframe == 3.0:
   		output_filepath = self.output_dir + "/left" +'/images/' + str(i + 1) + '.png'
-  	#return output_filepath
-  	bpy.context.scene.render.filepath = output_filepath
-    #self.nodes['File Output'].file_slots[0].path = '/images2/'+str(i + 1) 
+  		depth_path ="/left" +'/images2/'+str(i + 1)+'.png'
+  	#self.nodes['File Output'].file_slots[0].path = depth_path
+  	return output_filepath, depth_path 
+
       
 
 
@@ -466,9 +473,9 @@ if __name__=="__main__":
 
 
 
-    file = open("/home/gnss/Desktop/file.txt","a")
-    parking = Parking('/home/gnss/si/Blender_test/parkinglot/Blender_render/({},{})'.format('one', 'three'))
-    parking.startRenderingIteration(10)
+    #file = open("/home/gnss/Desktop/file.txt","a")
+    parking = Parking('/home/xisizhe/blender/data')
+    parking.startRenderingIteration(500)
 
     '''''
     annot_file = open(output_dir + '/annotations.txt', 'w+')
