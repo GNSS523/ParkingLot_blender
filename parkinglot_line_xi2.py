@@ -237,7 +237,7 @@ class Parking(object):
   			if (slot.name.startswith("carpaint_AudiA8")):
   				nodes = slot.material.node_tree.nodes
   				nodes["Diffuse BSDF"].inputs[0].default_value = color
-  			elif (slot.name.startswith("Carpaint.stainedwhite")):
+  			elif (slot.name.startswith("Carpaint_BMW335i")):
   				nodes = slot.material.node_tree.nodes
   				nodes["Diffuse BSDF"].inputs[0].default_value = color
   			elif (slot.name.startswith("carpaint_BMW1")):
@@ -246,7 +246,7 @@ class Parking(object):
   			elif (slot.name.startswith("carpaint_Dodge")):
   				nodes = slot.material.node_tree.nodes
   				nodes["Diffuse BSDF"].inputs[0].default_value = color
-  			elif (slot.name.startswith("Carpaint.Blue")):
+  			elif (slot.name.startswith("Carpaint_FIAT")):
   				nodes = slot.material.node_tree.nodes
   				nodes["Diffuse BSDF"].inputs[0].default_value = color
   			elif (slot.name.startswith("Carpaint_Golf")):
